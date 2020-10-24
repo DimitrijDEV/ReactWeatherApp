@@ -9,6 +9,7 @@ import Header from './Components/DumbComponents/Header';
 import Home from './Components/DumbComponents/Home';
 import Login from './Components/HighComponents/Login';
 import SignUp from './Components/HighComponents/SignUp';
+import Weather from './Components/HighComponents/Weather';
 
 function App() {
   return (
@@ -26,6 +27,10 @@ function App() {
 
           <Route path="/signup">
             <SignUp />
+          </Route>
+
+          <Route path="/weather">
+            <Weather/>
           </Route>
         </Switch>
       </Router>

@@ -2,14 +2,18 @@ import React from "react";
 import axios from "axios";
 import image from "../../Assets/Images/home.jpg";
 import { Button, Container, Row, Col, Form, Image } from "react-bootstrap";
+import { Redirect } from "react-router-dom";
+import { connect } from 'react-redux';
 
 class SignUp extends React.Component {
   state = {
     email: "",
+    username: "",
     password: "",
     checkPass: "",
-    passwordErr: false,
-    userExist: false
+    registered: false,
+    passwordCorrect: true,
+    userExist: false,
   };
 
   handleChange = (event) => {
@@ -19,30 +23,62 @@ class SignUp extends React.Component {
   handleSubmit = (event) => {
     event.preventDefault();
 
-    const { email, password, checkPass } = this.state;
+    const { email, password, checkPass, username } = this.state;
 
-    if(checkPass === password){
+    if (
+      password.length > 0 &&
+      checkPass.length > 0 &&
+      email.length > 0 &&
+      username.length > 0 &&
+      checkPass === password 
+    ) {
+
       const user = {
         email,
+        username,
         password,
       };
-  
+
       axios
         .post("http://localhost:5000/signup", user)
-        .then((res) => console.log(res))
+        .then((res) => {
+          this.setState({
+            email: "",
+            password: "",
+            checkPass: "",
+            passwordCorrect: true,
+            userExist: res.data.userExist,
+            registered: res.data.userCreated
+          });
+        })
         .catch((err) => {
           console.error(err);
         });
-    }
-    else
-     this.setState( prevState =>({
-       passwordErr: !prevState.passwordErr
-     }))
+    } else
+      this.setState((prevState) => ({
+        passwordCorrect: !prevState.passwordCorrect,
+      }));
   };
 
   render() {
-    const { checkPass, email, password } = this.state;
-    console.log(this.state)
+    const {
+      checkPass,
+      username,
+      email,
+      password,
+      passwordCorrect,
+      userExist,
+      registered,
+    } = this.state;
+
+    const {authentication} = this.props;
+
+    if(authentication.logged) 
+      return <Redirect to='/weather'/>;
+
+    if(registered) 
+      return <Redirect to='/login'/>;
+
     return (
       <div className="signup">
         <Container className="p-5 bg-light" style={{ marginTop: 150 }}>
@@ -61,6 +97,22 @@ class SignUp extends React.Component {
                     value={email}
                     onChange={this.handleChange}
                     placeholder="Enter email"
+                  />
+                  {userExist && (
+                    <Form.Text className="text-danger">
+                      You can't use this email twice
+                    </Form.Text>
+                  )}
+                </Form.Group>
+
+                <Form.Group>
+                  <Form.Label>Username</Form.Label>
+                  <Form.Control
+                    name="username"
+                    type="text"
+                    value={username}
+                    onChange={this.handleChange}
+                    placeholder="Type your username"
                   />
                 </Form.Group>
 
@@ -84,9 +136,18 @@ class SignUp extends React.Component {
                     onChange={this.handleChange}
                     placeholder="Repeat password"
                   />
+                  {passwordCorrect === false && userExist === false && (
+                    <Form.Text className="text-danger">
+                      The password doesn't match
+                    </Form.Text>
+                  )}
                 </Form.Group>
 
-                <Button variant="primary" type="submit" onClick={this.handleSubmit}>
+                <Button
+                  variant="primary"
+                  type="submit"
+                  onClick={this.handleSubmit}
+                >
                   Submit
                 </Button>
               </Form>
@@ -98,4 +159,8 @@ class SignUp extends React.Component {
   }
 }
 
-export default SignUp;
+const mapStateToProps = state => ({
+  authentication: state.authentication
+})
+
+export default connect(mapStateToProps)(SignUp);

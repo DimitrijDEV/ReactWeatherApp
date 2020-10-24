@@ -1,14 +1,17 @@
 import React from "react";
+import { connect } from "react-redux";
 import axios from "axios";
+import { login } from "../../Actions";
 import image from "../../Assets/Images/home.jpg";
+import { Redirect } from "react-router-dom";
 import { Button, Container, Row, Col, Form, Image } from "react-bootstrap";
 
 class Login extends React.Component {
   state = {
     email: "",
     password: "",
-    userExist: false,
-    passwordErr: false
+    userExist: true,
+    passwordCorrect: true,
   };
 
   handleChange = (event) => {
@@ -19,6 +22,7 @@ class Login extends React.Component {
     event.preventDefault();
 
     const { email, password } = this.state;
+    const { dispatch } = this.props;
 
     const user = {
       email,
@@ -27,14 +31,29 @@ class Login extends React.Component {
 
     axios
       .post("http://localhost:5000/login", user)
-      .then((res) => console.log(res))
+      .then((res) => {
+        const {userExist, passwordCorrect} = res.data;
+
+        if (userExist === false || passwordCorrect === false) {
+          this.setState({
+            userExist,
+            passwordCorrect
+          });
+        }
+
+        if (userExist && passwordCorrect)
+          dispatch(login(res.data.id, res.data.username));
+      })
       .catch((err) => {
         console.error(err);
       });
   };
 
   render() {
-    const { email, password } = this.state;
+    const { email, password, passwordCorrect, userExist } = this.state;
+    const { authentication } = this.props;
+
+    if (authentication.logged) return <Redirect to="/weather" />;
 
     return (
       <div className="login">
@@ -55,6 +74,11 @@ class Login extends React.Component {
                     onChange={this.handleChange}
                     placeholder="Enter email"
                   />
+                  {userExist === false && (
+                    <Form.Text className="text-danger">
+                      You need to sign up
+                    </Form.Text>
+                  )}
                 </Form.Group>
 
                 <Form.Group controlId="formBasicPassword">
@@ -66,6 +90,11 @@ class Login extends React.Component {
                     onChange={this.handleChange}
                     placeholder="Password"
                   />
+                  {passwordCorrect === false && userExist !== false && (
+                    <Form.Text className="text-danger">
+                      Your password is incorect
+                    </Form.Text>
+                  )}
                 </Form.Group>
 
                 <Button
@@ -84,4 +113,8 @@ class Login extends React.Component {
   }
 }
 
-export default Login;
+const mapStateToProps = (state) => ({
+  authentication: state.authentication,
+});
+
+export default connect(mapStateToProps)(Login);
