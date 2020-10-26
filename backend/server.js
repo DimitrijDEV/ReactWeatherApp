@@ -23,6 +23,12 @@ const getUsers = () => {
   return usersArr;
 }
 
+const getCities = () => {
+  const fileContent = fs.readFileSync('./database/Cities.json');
+  const citiesArr = JSON.parse(fileContent);
+  return citiesArr;
+}
+
 const findUser = (person, users) => {
   if (person !== undefined) {
     const user = users.find(user => person.email === user.email);
@@ -55,6 +61,79 @@ const createUser = (newUser) => {
     return false;
 }
 
+const checkCity = (cityID, cities) => {
+
+  for (let i = 0; i < cities.length; i++) {
+    if (cities[i].id === cityID)
+      return true;
+  }
+  return false
+}
+
+app.get('/cities', function (req, res) {
+
+  const cities = getCities();
+
+  let newArr = [];
+
+  for (let i = 0; i < cities.length; i++) {
+    newArr.push({
+      id: cities[i].id,
+      name: cities[i].name
+    })
+  }
+
+  res.send(newArr);
+})
+
+app.post('/add-city', function (req, res) {
+
+  const { cityID, cityName, userID, password } = req.body, users = getUsers();
+  let cities = []
+
+  if (users.length > 0) {
+
+    for (let i = 0; i < users.length; i++) {
+      if (users[i].id === userID && users[i].password === password) {
+        const cityExist = checkCity(cityID, users[i].cities);
+
+        if (cityExist === false)
+          users[i].cities.push({ id: cityID, name: cityName });
+
+        cities = users[i].cities;
+        break;
+      }
+    }
+
+    let data = JSON.stringify({ users: users });
+    fs.writeFileSync('./database/Users.json', data);
+
+    res.send(cities);
+  }
+});
+
+app.post('/remove-city', function (req, res) {
+
+  const { cityID, userID, password } = req.body, users = getUsers();
+  let cities = [];
+
+  if (users.length > 0) {
+    for (let i = 0; i < users.length; i++) {
+      if (users[i].id === userID && users[i].password === password) {
+        users[i].cities = users[i].cities.filter(city => city.id !== cityID);
+        cities = users[i].cities;
+        break;
+      }
+    }
+
+    let data = JSON.stringify({ users: users });
+    fs.writeFileSync('./database/Users.json', data);
+
+    res.send(cities)
+  }
+});
+
+
 app.post('/login', function (req, res) {
 
   const users = getUsers();
@@ -67,6 +146,8 @@ app.post('/login', function (req, res) {
   let authStatus = {
     id: "",
     username: "",
+    password: "",
+    cities: [],
     userExist: false,
     passwordCorrect: false
   }
@@ -76,11 +157,13 @@ app.post('/login', function (req, res) {
 
     if (user !== undefined) {
       authStatus.userExist = true;
-      if (user.password === person.password){
+      if (user.password === person.password) {
         authStatus.id = user.id;
         authStatus.username = user.username;
+        authStatus.password = user.password;
+        authStatus.cities = user.cities;
         authStatus.passwordCorrect = true;
-      }  
+      }
     }
     res.send(authStatus);
   }
@@ -96,7 +179,8 @@ app.post('/signup', function (req, res) {
     id: `${users.length + 1}`,
     email: req.body.email,
     username: req.body.username,
-    password: req.body.password
+    password: req.body.password,
+    cities: []
   };
 
   let registerStatus = {

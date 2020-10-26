@@ -9,7 +9,7 @@ import Header from './Components/DumbComponents/Header';
 import Home from './Components/DumbComponents/Home';
 import Login from './Components/HighComponents/Login';
 import SignUp from './Components/HighComponents/SignUp';
-import Weather from './Components/HighComponents/Weather';
+import Main from './Components/HighComponents/Main';
 
 function App() {
   return (
@@ -29,8 +29,8 @@ function App() {
             <SignUp />
           </Route>
 
-          <Route path="/weather">
-            <Weather/>
+          <Route path="/main">
+            <Main/>
           </Route>
         </Switch>
       </Router>

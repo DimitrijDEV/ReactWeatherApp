@@ -2,10 +2,15 @@ import React from "react";
 import { Container, Row, Col } from "react-bootstrap";
 import { connect } from "react-redux";
 import { Link } from "react-router-dom";
-import { logout } from "../../Actions";
+import { logout, removeCities } from "../../Actions";
 
 const Header = ({ authentication, dispatch }) => {
   console.log(authentication);
+
+  const logoutUser = () =>{
+    dispatch(logout())
+    dispatch(removeCities())
+  }
 
   if (authentication.logged === false) {
     return (
@@ -45,7 +50,7 @@ const Header = ({ authentication, dispatch }) => {
             </Col>
 
             <Col sm={4} className="text-right">
-              <Link className="text-light p-2" to="#" onClick={() => dispatch(logout())}>
+              <Link className="text-light p-2" to="#" onClick={logoutUser}>
                   Logout
               </Link>
             </Col>

@@ -1,7 +1,7 @@
 import React from "react";
 import { connect } from "react-redux";
 import axios from "axios";
-import { login } from "../../Actions";
+import { login, getUserCities } from "../../Actions";
 import image from "../../Assets/Images/home.jpg";
 import { Redirect } from "react-router-dom";
 import { Button, Container, Row, Col, Form, Image } from "react-bootstrap";
@@ -32,7 +32,7 @@ class Login extends React.Component {
     axios
       .post("http://localhost:5000/login", user)
       .then((res) => {
-        const {userExist, passwordCorrect} = res.data;
+        const {userExist, passwordCorrect, id, username, password} = res.data;
 
         if (userExist === false || passwordCorrect === false) {
           this.setState({
@@ -42,7 +42,8 @@ class Login extends React.Component {
         }
 
         if (userExist && passwordCorrect)
-          dispatch(login(res.data.id, res.data.username));
+          dispatch(getUserCities(res.data.cities));
+          dispatch(login(id, username, password));
       })
       .catch((err) => {
         console.error(err);
@@ -53,7 +54,7 @@ class Login extends React.Component {
     const { email, password, passwordCorrect, userExist } = this.state;
     const { authentication } = this.props;
 
-    if (authentication.logged) return <Redirect to="/weather" />;
+    if (authentication.logged) return <Redirect to="/main" />;
 
     return (
       <div className="login">
@@ -92,7 +93,7 @@ class Login extends React.Component {
                   />
                   {passwordCorrect === false && userExist !== false && (
                     <Form.Text className="text-danger">
-                      Your password is incorect
+                      Your password is incorect. Please try again.
                     </Form.Text>
                   )}
                 </Form.Group>

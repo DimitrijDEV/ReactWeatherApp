@@ -1,6 +1,7 @@
 let initialState = {
     id: "",
     username: "",
+    password: "",
     logged: false
 }
 
@@ -11,6 +12,7 @@ const authentication = (state = initialState, action) => {
                 {
                     id: action.id,
                     username: action.username,
+                    password: action.password,
                     logged: true
                 }
             )
@@ -21,6 +23,7 @@ const authentication = (state = initialState, action) => {
                 {
                     id: "",
                     username: "",
+                    password: "",
                     logged: false
                 }
             )
