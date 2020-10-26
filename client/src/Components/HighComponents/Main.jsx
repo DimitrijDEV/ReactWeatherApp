@@ -20,8 +20,6 @@ class Main extends React.Component {
     const { dispatch, citiesApi } = this.props;
 
     if (citiesApi.length === 0) {
-      this.getCity(756135);
-
       axios
         .get("http://localhost:5000/cities")
         .then((res) => {
@@ -30,6 +28,13 @@ class Main extends React.Component {
         .catch((err) => {
           console.error(err);
         });
+
+        const interval = setInterval(() => {
+          this.getCity(756135);
+        }, 60000);
+
+        this.getCity(756135);
+        this.setState({ intervalID: interval });
     }
   }
 
@@ -46,6 +51,7 @@ class Main extends React.Component {
       desc: "",
     },
     foundCities: [],
+    intervalID: "",
   };
 
   handleSelect = (event) => {
@@ -128,9 +134,15 @@ class Main extends React.Component {
 
   showCity = () => {
     const { id } = this.state.userCity;
+    const interval = setInterval(() => {
+      this.getCity(id);
+    }, 60000);
 
     if (id.length > 0) {
+      clearInterval(this.state.intervalID);
+
       this.getCity(id);
+      this.setState({ cityID: id, intervalID: interval });
     }
   };
 
@@ -152,7 +164,9 @@ class Main extends React.Component {
           wind = "",
           temp = "",
           desc = "";
-   
+
+        console.log(data);
+
         if (data.main !== undefined) {
           name = data.name;
           humidity = data.main.humidity;
@@ -170,26 +184,17 @@ class Main extends React.Component {
             },
           });
         }
-      });
-  };
-
-  checkWeather = (cityID) => {
-    const interval = setInterval(() => {
-      this.getCity(cityID);
-    }, 60000);
-
-    return () => clearInterval(interval);
+      })
+      .catch((err) => console.log(err));
   };
 
   render() {
-    const { search, foundCities, city, cityID } = this.state,
+    const { search, foundCities, city } = this.state,
       { citiesApi, citiesUser, authentication } = this.props;
 
-      if (authentication.logged === false) return <Redirect to="/login" />;
+    if (authentication.logged === false) return <Redirect to="/login" />;
 
     if (citiesApi.length > 0) {
- 
-
       return (
         <div className="main" style={{ marginTop: 100 }}>
           <Container className="bg-light">
