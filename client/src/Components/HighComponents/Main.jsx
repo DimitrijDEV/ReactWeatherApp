@@ -20,7 +20,7 @@ import LineChart from "../DumbComponents/LineChart";
 class Main extends React.Component {
   componentDidMount() {
     const { dispatch, citiesApi, authentication } = this.props;
-   
+
     if (citiesApi.length === 0 && authentication.logged) {
       axios
         .get("http://localhost:5000/cities")
@@ -91,8 +91,10 @@ class Main extends React.Component {
 
   addTown = (event) => {
     event.preventDefault();
-    const { cityName, cityID } = this.state.foundCity,
-      { authentication, dispatch } = this.props;
+    const { id, name } = this.state.foundCity,
+      { authentication, dispatch } = this.props,
+      cityID = id,
+      cityName = name;
 
     if (cityName.length > 0 && cityID.length > 0) {
       const params = {
