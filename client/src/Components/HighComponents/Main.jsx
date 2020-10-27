@@ -18,19 +18,14 @@ import CityList from "../DumbComponents/CityList";
 import LineChart from "../DumbComponents/LineChart";
 
 class Main extends React.Component {
-  _isMounted = false;
-
   componentDidMount() {
-    const { dispatch, citiesApi } = this.props;
-    this._isMounted = true;
-
-    if (citiesApi.length === 0) {
+    const { dispatch, citiesApi, authentication } = this.props;
+   
+    if (citiesApi.length === 0 && authentication.logged) {
       axios
         .get("http://localhost:5000/cities")
         .then((res) => {
-          if (this._isMounted) {
-            dispatch(writeCities(res.data));
-          }
+          dispatch(writeCities(res.data));
         })
         .catch((err) => {
           console.error(err);
@@ -45,12 +40,6 @@ class Main extends React.Component {
     }
   }
 
-  componentWillUnmount() {
-    this._isMounted = false;
-    clearInterval(this.state.intervalID);
-    console.log(this.state);
-  }
-
   state = {
     search: "",
     userCity: { id: "", name: "" },
@@ -62,7 +51,7 @@ class Main extends React.Component {
       wind: "",
       desc: "",
     },
-    week: [],
+    weekData: [],
     tempData: [],
     humidityData: [],
     foundCities: [],
@@ -102,8 +91,7 @@ class Main extends React.Component {
 
   addTown = (event) => {
     event.preventDefault();
-    const cityID = this.state.foundCity.id,
-      cityName = this.state.foundCity.name,
+    const { cityName, cityID } = this.state.foundCity,
       { authentication, dispatch } = this.props;
 
     if (cityName.length > 0 && cityID.length > 0) {
@@ -174,91 +162,89 @@ class Main extends React.Component {
   };
 
   getCity = (cityID, cities) => {
-    if (this._isMounted) {
-      const key = "6064dfa2d2b9d50fb77e84a7e6d95410";
-      let foundCity = {};
+    const key = "6064dfa2d2b9d50fb77e84a7e6d95410";
+    let foundCity = {};
 
-      if (cities.length > 0) {
-        foundCity = cities.find((city) => cityID === city.id.toString());
-      } else {
-        foundCity = { lat: "52.229771", lon: "21.01178" };
-      }
+    if (cities.length > 0) {
+      foundCity = cities.find((city) => cityID === city.id.toString());
+    } else {
+      foundCity = { lat: "52.229771", lon: "21.01178" };
+    }
 
-      fetch(
-        `https://api.openweathermap.org/data/2.5/weather?id=${cityID}&appid=${key}`
-      )
-        .then((resp) => {
-          return resp.json();
-        })
-        .then((data) => {
-          console.log("We get data from API");
-          console.log(data);
-          let name = "",
-            humidity = "",
-            wind = "",
-            temp = "",
-            desc = "";
+    fetch(
+      `https://api.openweathermap.org/data/2.5/weather?id=${cityID}&appid=${key}`
+    )
+      .then((resp) => {
+        return resp.json();
+      })
+      .then((data) => {
+        console.log("We got data from API");
+        console.log(data);
+        let name = "",
+          humidity = "",
+          wind = "",
+          temp = "",
+          desc = "";
 
-          if (data.main !== undefined) {
-            name = data.name;
-            humidity = data.main.humidity;
-            wind = Math.round(data.wind.speed);
-            temp = Math.round(parseFloat(data.main.temp) - 273.15);
-            desc = data.weather[0].main;
-
-            this.setState({
-              city: {
-                name,
-                humidity,
-                wind,
-                temp,
-                desc,
-              },
-            });
-          }
-        })
-        .catch((err) => console.log(err));
-
-      fetch(
-        `https://api.openweathermap.org/data/2.5/onecall?lat=${foundCity.lat}&lon=${foundCity.lon}&exclude=minutely,hourly&appid=${key}`
-      )
-        .then((resp) => {
-          return resp.json();
-        })
-        .then((data) => {
-          const { daily } = data,
-            week = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-
-          let weatherWeek = [],
-            weatherTemp = [],
-            weatherHumidity = [];
-
-          for (let i = 0; i < daily.length; i++) {
-            let unixTime = daily[i].dt,
-              milliseconds = unixTime * 1000,
-              dateObj = new Date(milliseconds),
-              dayOfWeek = dateObj.getDay();
-
-            weatherWeek.push(week[dayOfWeek]);
-          }
-
-          for (let i = 0; i < daily.length; i++) {
-            let temp = Math.round(parseFloat(daily[i].temp.day) - 273.15);
-            weatherTemp.push(temp);
-          }
-
-          for (let i = 0; i < daily.length; i++) {
-            weatherHumidity.push(daily[i].humidity);
-          }
+        if (data.main !== undefined) {
+          name = data.name;
+          humidity = data.main.humidity;
+          wind = Math.round(data.wind.speed);
+          temp = Math.round(parseFloat(data.main.temp) - 273.15);
+          desc = data.weather[0].main;
 
           this.setState({
-            week: weatherWeek,
-            tempData: weatherTemp,
-            humidityData: weatherHumidity,
+            city: {
+              name,
+              humidity,
+              wind,
+              temp,
+              desc,
+            },
           });
-        })
-        .catch((err) => console.log(err));
-    }
+        }
+      })
+      .catch((err) => console.log(err));
+
+    fetch(
+      `https://api.openweathermap.org/data/2.5/onecall?lat=${foundCity.lat}&lon=${foundCity.lon}&exclude=minutely,hourly&appid=${key}`
+    )
+      .then((resp) => {
+        return resp.json();
+      })
+      .then((data) => {
+        const { daily } = data,
+          week = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+        let weatherWeek = [],
+          weatherTemp = [],
+          weatherHumidity = [];
+
+        for (let i = 0; i < daily.length; i++) {
+          let unixTime = daily[i].dt,
+            milliseconds = unixTime * 1000,
+            dateObj = new Date(milliseconds),
+            dayOfWeek = dateObj.getDay();
+
+          weatherWeek.push(week[dayOfWeek]);
+        }
+
+        for (let i = 0; i < daily.length; i++) {
+          let temp = Math.round(parseFloat(daily[i].temp.day) - 273.15);
+          weatherTemp.push(temp);
+        }
+
+        for (let i = 0; i < daily.length; i++) {
+          weatherHumidity.push(daily[i].humidity);
+        }
+
+        this.setState({
+          weekData: weatherWeek,
+          tempData: weatherTemp,
+          humidityData: weatherHumidity,
+        });
+      })
+      .catch((err) => console.log(err));
   };
 
   render() {
@@ -266,7 +252,7 @@ class Main extends React.Component {
         search,
         foundCities,
         city,
-        week,
+        weekData,
         humidityData,
         tempData,
         showChart,
@@ -277,11 +263,11 @@ class Main extends React.Component {
 
     if (citiesApi.length > 0) {
       return (
-        <div className="main" style={{ marginTop: 100 }}>
+        <div className="main" style={{ marginTop: 80 }}>
           <Container className="bg-light">
             {showChart ? (
               <LineChart
-                week={week}
+                week={weekData}
                 humidityData={humidityData}
                 tempData={tempData}
               />
@@ -407,39 +393,3 @@ const mapStateToProps = (state) => ({
 });
 
 export default connect(mapStateToProps)(Main);
-
-// <div className="main" style={{ marginTop: 150 }}>
-// <div className="wrapper">
-//   <div className="left-block">
-//     <Image
-//       src={require("../../Assets/Images/autumn.jpg")}
-//       alt="Warsaw"
-//     />
-//   </div>
-//   <div className="right-block">
-//     <div className="list-cities">
-//       <Form>
-//         <Form.Group controlId="exampleForm.SelectCustom">
-//           <Form.Label>Custom select</Form.Label>
-//           <Form.Control as="select" custom>
-//             <option>1</option>
-//             <option>2</option>
-//             <option>3</option>
-//             <option>4</option>
-//             <option>5</option>
-//           </Form.Control>
-//         </Form.Group>
-//       </Form>
-//     </div>
-//   </div>
-// </div>
-// </div>
-
-// const key = "6064dfa2d2b9d50fb77e84a7e6d95410",
-//   cityID = "2172797";
-
-// fetch('https://api.openweathermap.org/data/2.5/weather?id=' + cityID+ '&appid=' + key)
-// .then(function(resp) { return resp.json() })
-// .then(function(data) {
-//   console.log(data);
-// })
