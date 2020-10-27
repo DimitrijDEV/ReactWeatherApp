@@ -7,6 +7,8 @@ import { Redirect } from "react-router-dom";
 import { Button, Container, Row, Col, Form, Image } from "react-bootstrap";
 
 class Login extends React.Component {
+  _isMounted = false;
+
   state = {
     email: "",
     password: "",
@@ -32,18 +34,19 @@ class Login extends React.Component {
     axios
       .post("http://localhost:5000/login", user)
       .then((res) => {
-        const {userExist, passwordCorrect, id, username, password} = res.data;
+        const { userExist, passwordCorrect, id, username, password } = res.data;
 
         if (userExist === false || passwordCorrect === false) {
           this.setState({
             userExist,
-            passwordCorrect
+            passwordCorrect,
           });
         }
 
-        if (userExist && passwordCorrect)
+        if (userExist && passwordCorrect) {
           dispatch(getUserCities(res.data.cities));
           dispatch(login(id, username, password));
+        }
       })
       .catch((err) => {
         console.error(err);
@@ -116,6 +119,7 @@ class Login extends React.Component {
 
 const mapStateToProps = (state) => ({
   authentication: state.authentication,
+  citiesApi: state.citiesApi,
 });
 
 export default connect(mapStateToProps)(Login);

@@ -1,45 +1,57 @@
 import React from "react";
 import { Redirect } from "react-router-dom";
 import { connect } from "react-redux";
-import { getUserCities } from "../../Actions";
-import { writeCities } from "../../Actions";
+import { getUserCities, writeCities } from "../../Actions";
 import axios from "axios";
 import {
   Container,
   Row,
   Col,
   Spinner,
-  Form,
   Button,
   Alert,
+  Form,
 } from "react-bootstrap";
 import "../../Assets/CSS/Main.css";
+import CityInfo from "../DumbComponents/CityInfo";
+import CityList from "../DumbComponents/CityList";
+import LineChart from "../DumbComponents/LineChart";
 
 class Main extends React.Component {
+  _isMounted = false;
+
   componentDidMount() {
     const { dispatch, citiesApi } = this.props;
+    this._isMounted = true;
 
     if (citiesApi.length === 0) {
       axios
         .get("http://localhost:5000/cities")
         .then((res) => {
-          dispatch(writeCities(res.data));
+          if (this._isMounted) {
+            dispatch(writeCities(res.data));
+          }
         })
         .catch((err) => {
           console.error(err);
         });
 
-        const interval = setInterval(() => {
-          this.getCity(756135);
-        }, 60000);
+      const interval = setInterval(() => {
+        this.getCity("756135", []);
+      }, 60000);
 
-        this.getCity(756135);
-        this.setState({ intervalID: interval });
+      this.getCity("756135", []);
+      this.setState({ intervalID: interval });
     }
   }
 
+  componentWillUnmount() {
+    this._isMounted = false;
+    clearInterval(this.state.intervalID);
+    console.log(this.state);
+  }
+
   state = {
-    cityID: "756135",
     search: "",
     userCity: { id: "", name: "" },
     foundCity: { id: "", name: "" },
@@ -50,8 +62,12 @@ class Main extends React.Component {
       wind: "",
       desc: "",
     },
+    week: [],
+    tempData: [],
+    humidityData: [],
     foundCities: [],
     intervalID: "",
+    showChart: false,
   };
 
   handleSelect = (event) => {
@@ -62,6 +78,12 @@ class Main extends React.Component {
   handleChange = (event) => {
     if (event.target.value.length < 50)
       this.setState({ [event.target.name]: event.target.value });
+  };
+
+  handleCheck = (event) => {
+    this.setState((prevState) => ({
+      showChart: !prevState.showChart,
+    }));
   };
 
   handleSearch = (event) => {
@@ -133,63 +155,122 @@ class Main extends React.Component {
   };
 
   showCity = () => {
-    const { id } = this.state.userCity;
+    const { id } = this.state.userCity,
+      { citiesApi } = this.props;
+
     const interval = setInterval(() => {
-      this.getCity(id);
+      this.getCity(id, citiesApi);
     }, 60000);
 
     if (id.length > 0) {
       clearInterval(this.state.intervalID);
 
-      this.getCity(id);
-      this.setState({ cityID: id, intervalID: interval });
+      this.getCity(id, citiesApi);
+      this.setState({
+        cityID: id,
+        intervalID: interval,
+      });
     }
   };
 
-  getCity = (cityID) => {
-    const key = "6064dfa2d2b9d50fb77e84a7e6d95410";
+  getCity = (cityID, cities) => {
+    if (this._isMounted) {
+      const key = "6064dfa2d2b9d50fb77e84a7e6d95410";
+      let foundCity = {};
 
-    fetch(
-      "https://api.openweathermap.org/data/2.5/weather?id=" +
-        cityID +
-        "&appid=" +
-        key
-    )
-      .then((resp) => {
-        return resp.json();
-      })
-      .then((data) => {
-        let name = "",
-          humidity = "",
-          wind = "",
-          temp = "",
-          desc = "";
+      if (cities.length > 0) {
+        foundCity = cities.find((city) => cityID === city.id.toString());
+      } else {
+        foundCity = { lat: "52.229771", lon: "21.01178" };
+      }
 
-        console.log(data);
+      fetch(
+        `https://api.openweathermap.org/data/2.5/weather?id=${cityID}&appid=${key}`
+      )
+        .then((resp) => {
+          return resp.json();
+        })
+        .then((data) => {
+          console.log("We get data from API");
+          console.log(data);
+          let name = "",
+            humidity = "",
+            wind = "",
+            temp = "",
+            desc = "";
 
-        if (data.main !== undefined) {
-          name = data.name;
-          humidity = data.main.humidity;
-          wind = Math.round(data.wind.speed);
-          temp = Math.round(parseFloat(data.main.temp) - 273.15);
-          desc = data.weather[0].main;
+          if (data.main !== undefined) {
+            name = data.name;
+            humidity = data.main.humidity;
+            wind = Math.round(data.wind.speed);
+            temp = Math.round(parseFloat(data.main.temp) - 273.15);
+            desc = data.weather[0].main;
+
+            this.setState({
+              city: {
+                name,
+                humidity,
+                wind,
+                temp,
+                desc,
+              },
+            });
+          }
+        })
+        .catch((err) => console.log(err));
+
+      fetch(
+        `https://api.openweathermap.org/data/2.5/onecall?lat=${foundCity.lat}&lon=${foundCity.lon}&exclude=minutely,hourly&appid=${key}`
+      )
+        .then((resp) => {
+          return resp.json();
+        })
+        .then((data) => {
+          const { daily } = data,
+            week = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+          let weatherWeek = [],
+            weatherTemp = [],
+            weatherHumidity = [];
+
+          for (let i = 0; i < daily.length; i++) {
+            let unixTime = daily[i].dt,
+              milliseconds = unixTime * 1000,
+              dateObj = new Date(milliseconds),
+              dayOfWeek = dateObj.getDay();
+
+            weatherWeek.push(week[dayOfWeek]);
+          }
+
+          for (let i = 0; i < daily.length; i++) {
+            let temp = Math.round(parseFloat(daily[i].temp.day) - 273.15);
+            weatherTemp.push(temp);
+          }
+
+          for (let i = 0; i < daily.length; i++) {
+            weatherHumidity.push(daily[i].humidity);
+          }
 
           this.setState({
-            city: {
-              name,
-              humidity,
-              wind,
-              temp,
-              desc,
-            },
+            week: weatherWeek,
+            tempData: weatherTemp,
+            humidityData: weatherHumidity,
           });
-        }
-      })
-      .catch((err) => console.log(err));
+        })
+        .catch((err) => console.log(err));
+    }
   };
 
   render() {
-    const { search, foundCities, city } = this.state,
+    const {
+        search,
+        foundCities,
+        city,
+        week,
+        humidityData,
+        tempData,
+        showChart,
+      } = this.state,
       { citiesApi, citiesUser, authentication } = this.props;
 
     if (authentication.logged === false) return <Redirect to="/login" />;
@@ -198,49 +279,26 @@ class Main extends React.Component {
       return (
         <div className="main" style={{ marginTop: 100 }}>
           <Container className="bg-light">
-            <Row className="first-block d-flex p-5 text-light">
-              <Col sm={5} className="mt-4 ">
-                <div className="d-flex  justify-content-center">
-                  <h2 style={{ fontSize: 80 }}>{city.temp}</h2>
-                  <svg
-                    width="1em"
-                    height="1em"
-                    viewBox="0 0 16 16"
-                    className="bi bi-circle"
-                    fill="currentColor"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M8 15A7 7 0 1 0 8 1a7 7 0 0 0 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"
-                    />
-                  </svg>
-                </div>
+            {showChart ? (
+              <LineChart
+                week={week}
+                humidityData={humidityData}
+                tempData={tempData}
+              />
+            ) : (
+              <CityInfo city={city} />
+            )}
 
-                <div
-                  className="d-flex  justify-content-center"
-                  style={{ letterSpacing: 4, color: "black", opacity: 0.6 }}
-                >
-                  <h4 className="font-weight-bold">
-                    {city.desc.toUpperCase()}
-                  </h4>
-                </div>
-
-                <div className="d-flex  justify-content-center mt-4 text-center">
-                  <div style={{ marginRight: 40 }}>
-                    <h5 style={{ letterSpacing: 2 }}>HUMIDITY</h5>
-                    <p>{city.humidity}%</p>
-                  </div>
-                  <div>
-                    <h5 style={{ letterSpacing: 2 }}>WIND</h5>
-                    <p>{city.wind} K/M</p>
-                  </div>
-                </div>
-              </Col>
-              <Col sm={7} className="mt-4">
-                <div className="weather-city d-flex  justify-content-center">
-                  <h4 style={{ fontSize: 40 }}>{city.name}</h4>
-                </div>
+            <Row className="p-3">
+              <Col className="d-flex justify-content-end">
+                <Form>
+                  <Form.Check
+                    type="switch"
+                    id="custom-switch"
+                    label="Show Chart"
+                    onClick={this.handleCheck}
+                  />
+                </Form>
               </Col>
             </Row>
 
@@ -250,24 +308,12 @@ class Main extends React.Component {
 
                 {citiesUser.length > 0 ? (
                   <div>
-                    <Form>
-                      <Form.Group controlId="exampleForm.SelectCustomHtmlSize">
-                        <Form.Control as="select" htmlSize={10} custom>
-                          {citiesUser.map((city, index) => {
-                            return (
-                              <option
-                                className="userCity"
-                                key={index}
-                                id={city.id}
-                                onClick={this.handleSelect}
-                              >
-                                {city.name}
-                              </option>
-                            );
-                          })}
-                        </Form.Control>
-                      </Form.Group>
-                    </Form>
+                    <CityList
+                      listSize={10}
+                      cities={citiesUser}
+                      selectName="userCity"
+                      func={this.handleSelect}
+                    />
 
                     <div className=" d-flex  justify-content-center">
                       <Button
@@ -312,24 +358,12 @@ class Main extends React.Component {
 
                 {foundCities.length > 0 ? (
                   <div>
-                    <Form>
-                      <Form.Group controlId="exampleForm.SelectCustomHtmlSize">
-                        <Form.Control as="select" htmlSize={7} custom>
-                          {foundCities.map((city, index) => {
-                            return (
-                              <option
-                                className="foundCity"
-                                key={index}
-                                id={city.id}
-                                onClick={this.handleSelect}
-                              >
-                                {city.name}
-                              </option>
-                            );
-                          })}
-                        </Form.Control>
-                      </Form.Group>
-                    </Form>
+                    <CityList
+                      listSize={7}
+                      cities={foundCities}
+                      selectName="foundCity"
+                      func={this.handleSelect}
+                    />
 
                     <Button
                       className="w-100 "

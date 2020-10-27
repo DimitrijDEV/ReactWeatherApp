@@ -79,7 +79,9 @@ app.get('/cities', function (req, res) {
   for (let i = 0; i < cities.length; i++) {
     newArr.push({
       id: cities[i].id,
-      name: cities[i].name
+      name: cities[i].name,
+      lon: cities[i].coord.lon,
+      lat: cities[i].coord.lat
     })
   }
 
@@ -98,7 +100,10 @@ app.post('/add-city', function (req, res) {
         const cityExist = checkCity(cityID, users[i].cities);
 
         if (cityExist === false)
-          users[i].cities.push({ id: cityID, name: cityName });
+          users[i].cities.push({ 
+            id: cityID, 
+            name: cityName
+          });
 
         cities = users[i].cities;
         break;
