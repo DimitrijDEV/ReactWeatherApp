@@ -55,7 +55,6 @@ const createUser = (newUser) => {
     let data = JSON.stringify(updateUsers);
     fs.writeFileSync('./database/Users.json', data);
 
-    console.log(getUsers());
     return true;
   } else
     return false;
@@ -124,6 +123,7 @@ app.post('/remove-city', function (req, res) {
 
   if (users.length > 0) {
     for (let i = 0; i < users.length; i++) {
+
       if (users[i].id === userID && users[i].password === password) {
         users[i].cities = users[i].cities.filter(city => city.id !== cityID);
         cities = users[i].cities;

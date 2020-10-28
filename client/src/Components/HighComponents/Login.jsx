@@ -54,7 +54,12 @@ class Login extends React.Component {
   };
 
   render() {
-    const { email, password, passwordCorrect, userExist } = this.state;
+    const {
+      email,
+      password,
+      passwordCorrect,
+      userExist,
+    } = this.state;
     const { authentication } = this.props;
 
     if (authentication.logged) return <Redirect to="/main" />;
@@ -99,6 +104,7 @@ class Login extends React.Component {
                       Your password is incorect. Please try again.
                     </Form.Text>
                   )}
+
                 </Form.Group>
 
                 <Button

@@ -12,7 +12,6 @@ import {
   Alert,
   Form,
 } from "react-bootstrap";
-import "../../Assets/CSS/Main.css";
 import CityInfo from "../DumbComponents/CityInfo";
 import CityList from "../DumbComponents/CityList";
 import LineChart from "../DumbComponents/LineChart";
@@ -69,7 +68,7 @@ class Main extends React.Component {
       this.setState({ [event.target.name]: event.target.value });
   };
 
-  handleCheck = (event) => {
+  handleCheck = () => {
     this.setState((prevState) => ({
       showChart: !prevState.showChart,
     }));
@@ -126,7 +125,7 @@ class Main extends React.Component {
       const params = {
         userID: authentication.id,
         password: authentication.password,
-        cityID,
+        cityID
       };
 
       const foundCity = citiesUser.find((city) => city.id === cityID);
@@ -180,7 +179,7 @@ class Main extends React.Component {
         return resp.json();
       })
       .then((data) => {
-        console.log("We got data from API");
+        console.log(`We got data from API. City name is ${data.name}.`);
         console.log(data);
         let name = "",
           humidity = "",

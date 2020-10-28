@@ -5,8 +5,7 @@ import { Link } from "react-router-dom";
 import { logout, removeCities } from "../../Actions";
 
 const Header = ({ authentication, dispatch }) => {
-  console.log(authentication);
-
+ 
   const logoutUser = () =>{
     dispatch(logout())
     dispatch(removeCities())
@@ -39,6 +38,9 @@ const Header = ({ authentication, dispatch }) => {
       </div>
     );
   } else {
+
+    const {username} =  authentication;
+
     return (
       <div className="header bg-dark p-3" style={{ fontSize: 20 }}>
         <Container>
@@ -49,7 +51,13 @@ const Header = ({ authentication, dispatch }) => {
               </Link>
             </Col>
 
-            <Col sm={4} className="text-right">
+            <Col sm={2} className="text-right">
+              <Link className="text-light p-2" to="#">
+                  {username.charAt(0).toUpperCase() + username.slice(1)}
+              </Link>
+            </Col>
+
+            <Col sm={2} className="text-right">
               <Link className="text-light p-2" to="#" onClick={logoutUser}>
                   Logout
               </Link>

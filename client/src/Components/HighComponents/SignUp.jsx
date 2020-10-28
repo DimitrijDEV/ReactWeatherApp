@@ -3,7 +3,7 @@ import axios from "axios";
 import image from "../../Assets/Images/home.jpg";
 import { Button, Container, Row, Col, Form, Image } from "react-bootstrap";
 import { Redirect } from "react-router-dom";
-import { connect } from 'react-redux';
+import { connect } from "react-redux";
 
 class SignUp extends React.Component {
   state = {
@@ -13,6 +13,7 @@ class SignUp extends React.Component {
     checkPass: "",
     registered: false,
     passwordCorrect: true,
+    passwordErr: false,
     userExist: false,
   };
 
@@ -23,19 +24,22 @@ class SignUp extends React.Component {
   handleSubmit = (event) => {
     event.preventDefault();
 
-    const { email, password, checkPass, username } = this.state;
+    const { email, username, password, checkPass } = this.state;
+    let  emailRegEx = "", usernameRegEx = "" 
+
+    usernameRegEx = username.replace(/\s+/g, "");
+    emailRegEx = email.replace(/\s+/g, "");
 
     if (
-      password.length > 0 &&
-      checkPass.length > 0 &&
-      email.length > 0 &&
-      username.length > 0 &&
-      checkPass === password 
+      password.length >= 6 &&
+      checkPass.length >= 6 &&
+      checkPass === password &&
+      usernameRegEx.length > 0 &&
+      emailRegEx.length > 0
     ) {
-
       const user = {
-        email,
-        username,
+        email: emailRegEx,
+        username: usernameRegEx,
         password,
       };
 
@@ -47,17 +51,24 @@ class SignUp extends React.Component {
             password: "",
             checkPass: "",
             passwordCorrect: true,
+            passwordErr: false,
             userExist: res.data.userExist,
-            registered: res.data.userCreated
+            registered: res.data.userCreated,
           });
         })
         .catch((err) => {
           console.error(err);
         });
-    } else
+    }
+
+    if (checkPass !== password)
       this.setState((prevState) => ({
         passwordCorrect: !prevState.passwordCorrect,
       }));
+
+    if (password.length < 6 && checkPass.length < 6) {
+      this.setState({ passwordErr: true });
+    }
   };
 
   render() {
@@ -67,17 +78,16 @@ class SignUp extends React.Component {
       email,
       password,
       passwordCorrect,
+      passwordErr,
       userExist,
       registered,
     } = this.state;
 
-    const {authentication} = this.props;
+    const { authentication } = this.props;
 
-    if(authentication.logged) 
-      return <Redirect to='/weather'/>;
+    if (authentication.logged) return <Redirect to="/weather" />;
 
-    if(registered) 
-      return <Redirect to='/login'/>;
+    if (registered) return <Redirect to="/login" />;
 
     return (
       <div className="signup">
@@ -127,6 +137,12 @@ class SignUp extends React.Component {
                   />
                 </Form.Group>
 
+                {passwordErr && (
+                  <Form.Text className="text-danger">
+                    Your password must be at least 6 characters.
+                  </Form.Text>
+                )}
+
                 <Form.Group controlId="formRepeatPassword">
                   <Form.Label>Repeat password</Form.Label>
                   <Form.Control
@@ -159,8 +175,8 @@ class SignUp extends React.Component {
   }
 }
 
-const mapStateToProps = state => ({
-  authentication: state.authentication
-})
+const mapStateToProps = (state) => ({
+  authentication: state.authentication,
+});
 
 export default connect(mapStateToProps)(SignUp);

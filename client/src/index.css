@@ -23,3 +23,22 @@ img{
 .html,body{
   background-image: linear-gradient(to right, #141E30, #243B55);
 }
+
+
+/* Main component */
+
+.main .first-block{
+  background-image: linear-gradient(to right, #673AB7, #512DA8);
+}
+
+.main .weather-city h4{
+  padding-bottom: 5px;
+  border-bottom: 2px solid white;
+}
+
+.main .list-block{
+  padding-right: 50px;
+  border-right: 3px solid #8153d1;
+}
+
+/* Main component */
