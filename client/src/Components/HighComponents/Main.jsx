@@ -76,12 +76,13 @@ class Main extends React.Component {
 
   handleSearch = (event) => {
     event.preventDefault();
+    
     const { search } = this.state,
       { citiesApi } = this.props;
 
     if (search.length >= 3) {
       let filteredArr = citiesApi.filter((city) =>
-        city.name.toLowerCase().includes(search)
+        city.name.toLowerCase().includes(search.toLowerCase())
       );
 
       this.setState({ foundCities: filteredArr });
